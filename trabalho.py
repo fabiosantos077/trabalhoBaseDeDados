@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """
 crud_console.py
-Esqueleto de CRUD em console usando sqlite3.
-Modelo: "items" com campos id (inteiro autoincrement), name (texto), description (texto).
+Esqueleto de CRUD em console usando PostgreSQL.
+Sistema de relatos cívicos e pontos de benefícios.
 """
 
-import sqlite3
+import psycopg2
 import datetime
 from dataclasses import dataclass
 from typing import Optional, List
 
-DB_PATH = "exemplo.db"
+# PostgreSQL connection configuration (Docker container)
+DB_CONFIG = {
+    'dbname': 'trabalho_db',
+    'user': 'trabalho_user',
+    'password': 'trabalho_pass',
+    'host': 'localhost',
+    'port': 5432
+}
 
 @dataclass
 class Usuario:
@@ -96,7 +103,7 @@ class CidadaoBeneficio:
     data: datetime.date
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    return psycopg2.connect(**DB_CONFIG)
 
 def init_db():
     with get_connection() as conn:
@@ -113,7 +120,7 @@ def init_db():
 def inserir_usuario(Usuario: user) -> int:
     with get_connection() as conn:
         cur = conn.cursor()
-        cur.execute("INSERT INTO Usuario (CAMPOS) VALUES (?, ?)",
+        cur.execute("INSERT INTO Usuario (CAMPOS) VALUES (%s, %s, %s, %s, %s)",
                     (user.CPF, user.name, user.email, user.dataNasc, user.role))
         conn.commit()
         return cur.lastrowid
@@ -121,7 +128,7 @@ def inserir_usuario(Usuario: user) -> int:
 def select_usuario(item_id: int) -> Optional[user]:
     with get_connection() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id, name, description FROM items WHERE id = ?", (item_id,))
+        cur.execute("SELECT id, name, description FROM items WHERE id = %s", (item_id,))
         row = cur.fetchone()
         return user(*row) if row else None
 
