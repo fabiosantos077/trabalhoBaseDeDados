@@ -377,7 +377,7 @@ def inserir_cidadaoBeneficio() -> int:
         conn.commit()
         return cur.rowcount
         
-def select_usuario(item_id: int) -> Optional[user]:
+def select_usuario(item_id: int) -> Optional[Usuario]:
     with get_connection() as conn:
         cur = conn.cursor()
         cur.execute("SELECT id, name, description FROM items WHERE id = %s", (item_id,))
@@ -431,33 +431,32 @@ def handle_create():
     print("12- CidadaoBeneficio")
     print("0- Sair")
     choice = input("Escolha: ").strip()
-    match choice:
-        case "1":
-            inserir_usuario()
-        case "2":
-            inserir_funcionario()
-        case "3":
-            inserir_cidadao()
-        case "4":
-            inserir_beneficio()
-        case "5":
-            inserir_interacao()
-        case "6":
-            inserir_comentario()
-        case "7":
-            inserir_avaliacao()
-        case "8":
-            inserir_report()
-        case "9":
-            inserir_midia()
-        case "10":
-            inserir_categoriaReport()
-        case "11":
-            inserir_historicoAtualizado()
-        case "12":
-            inserir_cidadaoBeneficio()
-        case "0":
-            pass
+    if choice == "1":
+        inserir_usuario()
+    elif choice == "2":
+        inserir_funcionario()
+    elif choice == "3":
+        inserir_cidadao()
+    elif choice == "4":
+        inserir_beneficio()
+    elif choice == "5":
+        inserir_interacao()
+    elif choice == "6":
+        inserir_comentario()
+    elif choice == "7":
+        inserir_avaliacao()
+    elif choice == "8":
+        inserir_report()
+    elif choice == "9":
+        inserir_midia()
+    elif choice == "10":
+        inserir_categoriaReport()
+    elif choice == "11":
+        inserir_historicoAtualizado()
+    elif choice == "12":
+        inserir_cidadaoBeneficio()
+    elif choice == "0":
+        pass
 
 
 def handle_view():
