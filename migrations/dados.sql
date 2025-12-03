@@ -52,12 +52,12 @@ INSERT INTO Beneficio (nomeBeneficio, custo, descricao) VALUES
 -- ===============================================
 
 -- Inserção de 3 Reports com diferentes status
-INSERT INTO Report (titulo, localizacao, descricao, dataCriacao, status, idCategoriaReport, cpfCidadao) VALUES
+-- Note: dataCriacao has DEFAULT NOW(), status has DEFAULT 'Aberto'
+INSERT INTO Report (titulo, localizacao, descricao, status, idCategoriaReport, cpfCidadao) VALUES
     (
         'Buraco grande na Av. Paulista',
         'Av. Paulista, 1000 - São Paulo/SP',
         'Buraco profundo causando riscos para veículos e pedestres',
-        '2024-11-15 10:30:00',
         'Resolvido',
         1,  -- Categoria: Buraco na Via
         '123.456.789-01'  -- Cidadão: Maria
@@ -66,7 +66,6 @@ INSERT INTO Report (titulo, localizacao, descricao, dataCriacao, status, idCateg
         'Poste sem iluminação na praça',
         'Praça da República - São Paulo/SP',
         'Poste apagado há mais de 1 semana, comprometendo segurança',
-        '2024-11-20 14:15:00',
         'Em Análise',
         2,  -- Categoria: Iluminação Pública
         '456.789.123-03'  -- Cidadão: Ana
@@ -75,7 +74,6 @@ INSERT INTO Report (titulo, localizacao, descricao, dataCriacao, status, idCateg
         'Lixo acumulado em terreno baldio',
         'Rua das Flores, 523 - Campinas/SP',
         'Grande volume de lixo acumulado atraindo roedores',
-        '2024-11-25 09:00:00',
         'Aberto',
         3,  -- Categoria: Lixo Acumulado
         '123.456.789-01'  -- Cidadão: Maria
@@ -86,20 +84,22 @@ INSERT INTO Report (titulo, localizacao, descricao, dataCriacao, status, idCateg
 -- ===============================================
 
 -- Inserção de 3 mídias vinculadas aos reports
-INSERT INTO Midia (link, idReport, dataUpload) VALUES
-    ('https://storage.apontai.com/fotos/buraco_paulista_001.jpg', 1, '2024-11-15 10:32:00'),
-    ('https://storage.apontai.com/fotos/poste_republica_001.jpg', 2, '2024-11-20 14:17:00'),
-    ('https://storage.apontai.com/fotos/lixo_flores_001.jpg', 3, '2024-11-25 09:05:00');
+-- Note: idMidia is SERIAL (auto-generated), dataUpload has DEFAULT NOW()
+INSERT INTO Midia (link, idReport) VALUES
+    ('https://storage.apontai.com/fotos/buraco_paulista_001.jpg', 1),
+    ('https://storage.apontai.com/fotos/poste_republica_001.jpg', 2),
+    ('https://storage.apontai.com/fotos/lixo_flores_001.jpg', 3);
 
 -- ===============================================
 -- BLOCO 6: Interações (dependem de Report e Cidadao)
 -- ===============================================
 
 -- Inserção de 3 interações de tipos diferentes
-INSERT INTO Interacao (cpfCidadao, idReport, dataHora, tipo) VALUES
-    ('456.789.123-03', 1, '2024-11-16 08:00:00', 'Comentario'),  -- Ana comenta no report de Maria
-    ('123.456.789-01', 2, '2024-11-21 10:30:00', 'Upvote'),      -- Maria dá upvote no report de Ana
-    ('123.456.789-01', 1, '2024-11-18 15:00:00', 'Avaliacao');   -- Maria avalia resolução do próprio report
+-- Note: dataHora has DEFAULT NOW()
+INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
+    ('456.789.123-03', 1, 'Comentario'),  -- Ana comenta no report de Maria
+    ('123.456.789-01', 2, 'Upvote'),      -- Maria dá upvote no report de Ana
+    ('123.456.789-01', 1, 'Avaliacao');   -- Maria avalia resolução do próprio report
 
 -- ===============================================
 -- BLOCO 7: Especializações de Interação
@@ -111,8 +111,8 @@ INSERT INTO Comentario (idInteracao, texto) VALUES
 
 -- Para ter pelo menos 2 tuplas, precisamos adicionar outro comentário
 -- Vamos adicionar mais uma interação do tipo Comentario
-INSERT INTO Interacao (cpfCidadao, idReport, dataHora, tipo) VALUES
-    ('456.789.123-03', 3, '2024-11-26 11:00:00', 'Comentario');
+INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
+    ('456.789.123-03', 3, 'Comentario');
 
 INSERT INTO Comentario (idInteracao, texto) VALUES
     (4, 'Situação muito grave, pode causar problemas de saúde pública!');
@@ -122,8 +122,8 @@ INSERT INTO Upvote (idInteracao) VALUES
     (2);
 
 -- Adicionar mais um upvote para ter 2 tuplas
-INSERT INTO Interacao (cpfCidadao, idReport, dataHora, tipo) VALUES
-    ('456.789.123-03', 1, '2024-11-17 09:00:00', 'Upvote');
+INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
+    ('456.789.123-03', 1, 'Upvote');
 
 INSERT INTO Upvote (idInteracao) VALUES
     (5);
@@ -133,8 +133,8 @@ INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
     (3, 5, 'Problema resolvido rapidamente! Equipe muito eficiente.');
 
 -- Adicionar mais uma avaliação
-INSERT INTO Interacao (cpfCidadao, idReport, dataHora, tipo) VALUES
-    ('456.789.123-03', 2, '2024-11-22 16:00:00', 'Avaliacao');
+INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
+    ('456.789.123-03', 2, 'Avaliacao');
 
 INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
     (6, 4, 'Estão analisando, aguardando retorno sobre prazo de resolução.');
@@ -144,26 +144,28 @@ INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
 -- ===============================================
 
 -- Inserção de 3 registros de atualização
-INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, dataHoraAtualizacao, atributoAtualizado) VALUES
-    (1, '987.654.321-02', '2024-11-16 09:00:00', 'status'),      -- João muda status para "Em Análise"
-    (1, '987.654.321-02', '2024-11-17 16:00:00', 'status'),      -- João muda status para "Resolvido"
-    (2, '321.654.987-04', '2024-11-21 08:30:00', 'status');      -- Carlos muda status para "Em Análise"
+-- Note: dataHoraAtualizacao has DEFAULT NOW()
+INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, atributoAtualizado) VALUES
+    (1, '987.654.321-02', 'status'),      -- João muda status para "Em Análise"
+    (1, '987.654.321-02', 'status'),      -- João muda status para "Resolvido"
+    (2, '321.654.987-04', 'status');      -- Carlos muda status para "Em Análise"
 
 -- ===============================================
 -- BLOCO 9: Resgate de Benefícios (dependem de Cidadao e Beneficio)
 -- ===============================================
 
 -- Inserção de 2 resgates de benefícios
+-- Note: dataHoraResgate has DEFAULT NOW()
 -- Maria resgata "Desconto Transporte Público" (custo: 100 pontos)
-INSERT INTO CidadaoBeneficio (cpfCidadao, nomeBeneficio, dataHoraResgate, pontosResgatados) VALUES
-    ('123.456.789-01', 'Desconto Transporte Público', '2024-11-18 10:00:00', 100);
+INSERT INTO CidadaoBeneficio (cpfCidadao, nomeBeneficio, pontosResgatados) VALUES
+    ('123.456.789-01', 'Desconto Transporte Público', 100);
 
 -- Ana resgata "Vale Cultura" (custo: 200 pontos)
 -- Nota: Ana teria que ter pelo menos 200 pontos, vamos ajustar seus pontos
 UPDATE Cidadao SET pontos = 200 WHERE cpf = '456.789.123-03';
 
-INSERT INTO CidadaoBeneficio (cpfCidadao, nomeBeneficio, dataHoraResgate, pontosResgatados) VALUES
-    ('456.789.123-03', 'Vale Cultura', '2024-11-22 14:00:00', 200);
+INSERT INTO CidadaoBeneficio (cpfCidadao, nomeBeneficio, pontosResgatados) VALUES
+    ('456.789.123-03', 'Vale Cultura', 200);
 
 -- Ajustar pontos dos cidadãos após resgates
 -- Maria tinha 250, resgatou 100, ficou com 150
