@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: trabalho_user
       POSTGRES_PASSWORD: trabalho_pass
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

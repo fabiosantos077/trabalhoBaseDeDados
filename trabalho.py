@@ -17,13 +17,13 @@ DB_CONFIG = {
     'user': 'trabalho_user',
     'password': 'trabalho_pass',
     'host': 'localhost',
-    'port': 5432
+    'port': 5435
 }
 
 @dataclass
 class Usuario:
-    CPF: str
-    name: str
+    cpf: str
+    nome: str
     email: str
     dataNasc: datetime.date
     role: str
@@ -173,166 +173,168 @@ def check_db_ready():
 def inserir_usuario() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo usuario")
-        user = Usuario()
-        user.CPF = input("CPF: ").strip()
-        user.name = input("Nome: ").strip()
-        user.email = input("Email: ").strip()
-        user.dataNasc = input("Data de Nascimento: ").strip()
-        user.role = input("Role: ").strip()
+        print("Inserindo Usuario")
+        cpf = input("CPF: ").strip()
+        nome = input("Nome: ").strip()
+        email = input("Email: ").strip()
+        data_nasc = input("Data de Nascimento (AAAA-MM-DD): ").strip()
+        role = input("Role (Cidadao/Funcionario): ").strip()
+        
         cur = conn.cursor()
-        cur.execute("INSERT INTO Usuario (CAMPOS) VALUES (%s, %s, %s, %s, %s)",
-                    (user.CPF, user.name, user.email, user.dataNasc, user.role))
+        cur.execute("""
+            INSERT INTO Usuario (cpf, nome, email, dataNascimento, role) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (cpf, nome, email, data_nasc, role))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
 def inserir_funcionario() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo funcionario")
-
-        func = Funcionario()
-        func.CPF = input("CPF: ").strip()
-        func.setor = input("Setor: ").strip()
-        func.cidade = input("Cidade: ").strip()
+        print("Inserindo Funcionario")
+        cpf = input("CPF: ").strip()
+        setor = input("Setor: ").strip()
+        cidade = input("Cidade: ").strip()
+        
         cur = conn.cursor()
-        cur.execute("INSERT INTO Funcionario VALUES (%s, %s, %s)",
-                    (func.CPF, func.setor, func.cidade))
+        cur.execute("INSERT INTO Funcionario (cpf, setor, cidade) VALUES (%s, %s, %s)",
+                    (cpf, setor, cidade))
         conn.commit()
-        return cur.lastrowid
-
+        return cur.rowcount
 
 def inserir_cidadao() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo cidadao")
-
-        cidadao = Cidadao()
-        cidadao.CPF = input("CPF: ").strip()
-        cidadao.pontos = input("Pontos: ").strip()
+        print("Inserindo Cidadao")
+        cpf = input("CPF: ").strip()
+        pontos = input("Pontos: ").strip()
+        
         cur = conn.cursor()
-        cur.execute("INSERT INTO Cidadao VALUES (%s, %s)",
-                    (cidadao.CPF, cidadao.pontos))
+        cur.execute("INSERT INTO Cidadao (cpf, pontos) VALUES (%s, %s)",
+                    (cpf, pontos))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
-
-def inserir_beneficios() -> int:
+def inserir_beneficio() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo beneficio")
-
-        beneficio = Beneficios()
-        beneficio.nome_benficio = input("Nome: ").strip()
-        beneficio.pontos = input("Pontos: ").strip()
-        beneficio.descricao = input("Descricao: ").strip()
+        print("Inserindo Beneficio")
+        nome = input("Nome: ").strip()
+        custo = input("Custo (Pontos): ").strip()
+        descricao = input("Descricao: ").strip()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Beneficios VALUES (%s, %s, %s)",
-                    (beneficio.nome_benficio, beneficio.pontos, beneficio.descricao))
+        cur.execute("INSERT INTO Beneficio (nomeBeneficio, custo, descricao) VALUES (%s, %s, %s)",
+                    (nome, custo, descricao))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
 def inserir_interacao() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo interacao")
-
-        interacao = Interacao()
-        interacao.CPF = input("Pontos: ").strip()
-        interacao.tipo = input("Descricao: ").strip()
-        interacao.data = datetime.now()
-        interacao.idReport = input("idReport: ").strip()
+        print("Inserindo Interacao")
+        cpf = input("CPF do Cidadão: ").strip()
+        id_report = input("ID do Report: ").strip()
+        tipo = input("Tipo (Comentario/Upvote/Avaliacao): ").strip()
+        data = datetime.datetime.now()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Interacao VALUES (%s, %s, %s, %s, %s)",
-                    ( interacao.CPF, interacao.tipo, interacao.data, interacao.idReport))
+        cur.execute("""
+            INSERT INTO Interacao (cpfCidadao, idReport, tipo, dataHora) 
+            VALUES (%s, %s, %s, %s) RETURNING idInteracao
+        """, (cpf, id_report, tipo, data))
+        
+        new_id = cur.fetchone()[0]
         conn.commit()
-        return cur.lastrowid
+        print(f"ID Gerado: {new_id}")
+        return new_id
 
 def inserir_comentario() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo comentario")
-
-        comentario = Comentario()
-        comentario.idInteracao = input("Id: ").strip()
-        comentario.texto = input("Texto: ").strip()
-        comentario.data = datetime.now()
+        print("Inserindo Comentario")
+        id_interacao = input("Id da Interação: ").strip()
+        texto = input("Texto: ").strip()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Comentario VALUES (%s, %s, %s)",
-                    (comentario.idInteracao, comentario.texto, comentario.data))
+        cur.execute("INSERT INTO Comentario (idInteracao, texto) VALUES (%s, %s)",
+                    (id_interacao, texto))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
 def inserir_avaliacao() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo avaliacao")
-
-        avalicao = Avaliacao()
-        avalicao.idInteracao = input("Id: ").strip()
-        avalicao.nota = input("Nota: ").strip()
-        avalicao.cometario = input("Comentaio: ").strip()
-        avalicao.data = datetime.now()
+        print("Inserindo Avaliacao")
+        id_interacao = input("Id da Interação: ").strip()
+        nota = input("Nota (1-5): ").strip()
+        comentario = input("Comentario: ").strip()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Avaliacao VALUES (%s, %s, %s, %s)",
-                    (avalicao.idInteracao, avalicao.data, avalicao.nota, avalicao.cometario))
+        cur.execute("INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES (%s, %s, %s)",
+                    (id_interacao, nota, comentario))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
 def inserir_report() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo report")
-
-        report = Report()
-        report.titulo = input("Titulo: ").strip()
-        report.localizacao = input("Localizacao: ").strip()
-        report.data = datetime.now()
-        report.status = input("Status: ").strip()
-        report.idCategoriaReport = input("idCategoriaReport: ").strip()
-        report.descricao = input("Descricao: ").strip()
-
+        print("Inserindo Report")
+        titulo = input("Titulo: ").strip()
+        localizacao = input("Localizacao: ").strip()
+        descricao = input("Descricao: ").strip()
+        status = input("Status (Aberto/Em Análise/Resolvido/Fechado): ").strip()
+        id_categoria = input("ID Categoria: ").strip()
+        cpf_cidadao = input("CPF Cidadão: ").strip()
+        data = datetime.datetime.now()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Report VALUES (%s, %s, %s, %s, %s, %s)",
-                    (report.titulo, report.localizacao, report.data, report.status, report.idCategoriaReport, report.descricao))
+        cur.execute("""
+            INSERT INTO Report (titulo, localizacao, descricao, status, idCategoriaReport, cpfCidadao, dataCriacao) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING idReport
+        """, (titulo, localizacao, descricao, status, id_categoria, cpf_cidadao, data))
+        
+        new_id = cur.fetchone()[0]
         conn.commit()
-        return cur.lastrowid
+        print(f"ID Gerado: {new_id}")
+        return new_id
 
 def inserir_midia() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo midia")
-
-        midia = Midia()
-        midia.link = input("Link: ").strip()
-        midia.idReport = input("idReport: ").strip()
-        midia.dataUpload = datetime.now()
+        print("Inserindo Midia")
+        link = input("Link: ").strip()
+        id_report = input("ID Report: ").strip()
+        data = datetime.datetime.now()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO Midia VALUES (%s, %s, %s)",
-                    (midia.link, midia.idReport, midia.dataUpload))
+        cur.execute("""
+            INSERT INTO Midia (link, idReport, dataUpload) 
+            VALUES (%s, %s, %s) RETURNING idMidia
+        """, (link, id_report, data))
+        
+        new_id = cur.fetchone()[0]
         conn.commit()
-        return cur.lastrowid
+        print(f"ID Gerado: {new_id}")
+        return new_id
 
 def inserir_categoriaReport() -> int:
     with get_connection() as conn:
         clear_console()
-        print("Inserindo categoriaReport")
-
-        categoriaReport = CategoriaReport()
-        categoriaReport.nome = input("Nome: ").strip()
-        categoriaReport.pontos = input("Pontos: ").strip()
+        print("Inserindo CategoriaReport")
+        nome = input("Nome: ").strip()
+        pontos = input("Pontos: ").strip()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO CategoriaReport VALUES (%s, %s)",
-                    (categoriaReport.nome, categoriaReport.pontos))
+        cur.execute("""
+            INSERT INTO CategoriaReport (nome, pontos) 
+            VALUES (%s, %s) RETURNING idCategoriaReport
+        """, (nome, pontos))
+        
+        new_id = cur.fetchone()[0]
         conn.commit()
-        return cur.lastrowid
+        print(f"ID Gerado: {new_id}")
+        return new_id
 
 @dataclass
 class HistoricoAtualizado:
@@ -345,37 +347,36 @@ def inserir_historicoAtualizado() -> int:
     with get_connection() as conn:
         clear_console()
         print("Inserindo HistoricoAtualizado")
-
-        historicoAtualizado = HistoricoAtualizado()
-        historicoAtualizado.funcionario = input("Funcionario: ").strip()
-        historicoAtualizado.idReport = input("idReport: ").strip()
-        historicoAtualizado.dataUpload = datetime.now()
-        historicoAtualizado.atributoAtualizado = input("Atributo Atualizado: ").strip()
-
+        funcionario = input("CPF Funcionario: ").strip()
+        id_report = input("idReport: ").strip()
+        atributo = input("Atributo Atualizado: ").strip()
+        data = datetime.datetime.now()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO HistoricoAtualizado VALUES (%s, %s, %s, %s)",
-                    ( historicoAtualizado.funcionario,  historicoAtualizado.idReport,  historicoAtualizado.dataUpload,  historicoAtualizado.atributoAtualizado))
+        cur.execute("""
+            INSERT INTO HistoricoAtualizacao (cpfFuncionario, idReport, dataHoraAtualizacao, atributoAtualizado) 
+            VALUES (%s, %s, %s, %s)
+        """, (funcionario, id_report, data, atributo))
         conn.commit()
-        return cur.lastrowid
+        return cur.rowcount
 
 def inserir_cidadaoBeneficio() -> int:
     with get_connection() as conn:
         clear_console()
         print("Inserindo CidadaoBeneficio")
-
-        cidadaoBeneficio = CidadaoBeneficio()
-        cidadaoBeneficio.cpf = input("CPF: ").strip()
-        cidadaoBeneficio.nomeBeneficio = input("Nome do beneficio: ").strip()
-        cidadaoBeneficio.dataUpload = datetime.now()
-
+        cpf = input("CPF: ").strip()
+        nome_beneficio = input("Nome do beneficio: ").strip()
+        pontos = input("Pontos Resgatados: ").strip()
+        data = datetime.datetime.now()
 
         cur = conn.cursor()
-        cur.execute("INSERT INTO CidadaoBeneficio VALUES (%s, %s, %s)",
-                    ( cidadaoBeneficio.cpf, cidadaoBeneficio.nomeBeneficio,  cidadaoBeneficio.dataUpload))
+        cur.execute("""
+            INSERT INTO CidadaoBeneficio (cpfCidadao, nomeBeneficio, pontosResgatados, dataHoraResgate) 
+            VALUES (%s, %s, %s, %s)
+        """, (cpf, nome_beneficio, pontos, data))
         conn.commit()
-        return cur.lastrowid
-
+        return cur.rowcount
+        
 def select_usuario(item_id: int) -> Optional[user]:
     with get_connection() as conn:
         cur = conn.cursor()
@@ -383,12 +384,12 @@ def select_usuario(item_id: int) -> Optional[user]:
         row = cur.fetchone()
         return user(*row) if row else None
 
-def list_usuarios() -> List[user]:
+def list_usuarios() -> List[Usuario]:
     with get_connection() as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM Usuario ORDER BY nome")
         rows = cur.fetchall()
-        return [user(*r) for r in rows]
+        return [Usuario(*r) for r in rows]
 
 
 def input_nonempty(prompt: str) -> str:
@@ -410,9 +411,9 @@ def handle_list():
     if not users:
         print("Nenhum item cadastrado.")
         return
-    print("\nItens:")
-    for it in users:
-        print()
+    print("\Lista de Usuários:")
+    for u in users:
+        print(f"Nome: {u.nome} | CPF: {u.cpf} | Role: {u.role}")
 
 def handle_create():
     print("Selecione em qual tabela você deseja adiocionar um dado: ")
@@ -454,7 +455,7 @@ def handle_create():
         case "11":
             inserir_historicoAtualizado()
         case "12":
-            inserir_cidadeBeneficio()
+            inserir_cidadaoBeneficio()
         case "0":
             pass
 

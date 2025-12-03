@@ -202,9 +202,10 @@ INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
 -- Note: dataHoraAtualizacao has DEFAULT NOW()
 INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, atributoAtualizado) VALUES
     (1, '987.654.321-02', 'status'),      -- João muda status para "Em Análise"
-    (1, '987.654.321-02', 'status'),      -- João muda status para "Resolvido"
     (2, '321.654.987-04', 'status'),      -- Carlos muda status para "Em Análise"
     (4, '555.666.777-88', 'status');      -- Funcionário sem email fecha report
+    (1, '987.654.321-02', 'status'),      -- João muda status para "Resolvido"
+
 
 -- ===============================================
 -- BLOCO 9: Resgate de Benefícios (dependem de Cidadao e Beneficio)
