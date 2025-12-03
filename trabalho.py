@@ -107,13 +107,65 @@ def get_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 def init_db():
-    with get_connection() as conn:
-        cur = conn.cursor()
-        # SQL DE CREATE TABLES(aqui tbm é o Fábio)
-        cur.execute("""
-            
-        """)
-        conn.commit()
+    """
+    DEPRECATED: Database initialization now handled by migration files.
+    Use 'make migrate-all' to create schema and populate data.
+    """
+    print("\n⚠️  Warning: init_db() is deprecated.")
+    print("Database schema is now managed through migration files.")
+    print("\nTo initialize the database, run:")
+    print("  make migrate-all")
+    print("\nFor a fresh start:")
+    print("  make migrate-reset")
+    print()
+
+def check_db_ready():
+    """
+    Verify that database has been migrated and contains data.
+    Returns True if ready, False otherwise with helpful error messages.
+    """
+    try:
+        with get_connection() as conn:
+            cur = conn.cursor()
+
+            # Check if core tables exist
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name IN ('usuario', 'report', 'cidadao')
+            """)
+            table_count = cur.fetchone()[0]
+
+            if table_count < 3:
+                print("\n❌ Database not initialized!")
+                print("Core tables are missing.")
+                print("\nRun: make migrate-all")
+                return False
+
+            # Check if data exists
+            cur.execute("SELECT COUNT(*) FROM Usuario")
+            user_count = cur.fetchone()[0]
+
+            if user_count == 0:
+                print("\n⚠️  Database has no data!")
+                print("Tables exist but are empty.")
+                print("\nRun: make migrate-data")
+                return False
+
+            return True
+
+    except psycopg2.OperationalError as e:
+        print("\n❌ Cannot connect to database!")
+        print(f"Error: {e}")
+        print("\nMake sure PostgreSQL is running:")
+        print("  make db-up")
+        return False
+    except Exception as e:
+        print(f"\n❌ Database error: {e}")
+        print("\nTry rebuilding the database:")
+        print("  make migrate-reset")
+        return False
 
 # -------------------------
 # Adicionando dados(é o Fábio escrevendo nao o gepeto)
@@ -409,7 +461,11 @@ def handle_create():
 
 def handle_view():
     try:
+        print("Funcionalidade de visualização em desenvolvimento.")
+        pass
     except ValueError:
+        print("Erro ao visualizar dados.")
+        pass
 
 def clear_console():
     """Clears the console screen."""
@@ -421,7 +477,19 @@ def clear_console():
         os.system('clear')
 
 def main_loop():
-    init_db()
+    """Main application loop with database validation."""
+    print("\n" + "="*50)
+    print("    SISTEMA DE RELATOS CÍVICOS")
+    print("="*50)
+
+    # Validate database is ready before starting
+    if not check_db_ready():
+        print("\n⚠️  Cannot start application due to database issues.")
+        print("Please fix the database first.\n")
+        return
+
+    print("✅ Database ready!\n")
+
     while True:
         menu()
         choice = input("Escolha: ").strip()

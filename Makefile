@@ -1,4 +1,4 @@
-.PHONY: help install db-up db-down db-restart db-logs db-shell run clean reset
+.PHONY: help install db-up db-down db-restart db-logs db-shell run clean reset migrate-schema migrate-data migrate-all run-queries migrate-reset migrate-verify
 
 help: ## Show this help message
 	@echo "Available commands:"
@@ -30,6 +30,31 @@ db-shell: ## Connect to PostgreSQL shell
 db-reset: ## Stop container and remove all data (DESTRUCTIVE)
 	docker-compose down -v
 	@echo "All database data has been removed!"
+
+migrate-schema: db-up ## Create database schema from migrations/esquema.sql
+	@echo "Creating database schema..."
+	@docker exec -i trabalho_postgres psql -U trabalho_user -d trabalho_db < migrations/esquema.sql
+	@echo "✓ Schema created successfully!"
+
+migrate-data: ## Populate initial data from migrations/dados.sql
+	@echo "Populating initial data..."
+	@docker exec -i trabalho_postgres psql -U trabalho_user -d trabalho_db < migrations/dados.sql
+	@echo "✓ Data populated successfully!"
+
+migrate-all: migrate-schema migrate-data ## Run complete migration (schema + data)
+	@echo ""
+	@echo "✓ Migration complete! Database ready."
+	@echo ""
+
+run-queries: ## Execute sample queries from migrations/consultas.sql
+	@echo "Running sample queries..."
+	@echo ""
+	@docker exec -i trabalho_postgres psql -U trabalho_user -d trabalho_db < migrations/consultas.sql
+
+migrate-reset: db-reset db-up migrate-all ## Full database rebuild (DESTRUCTIVE)
+	@echo ""
+	@echo "✓ Database completely rebuilt!"
+	@echo ""
 
 run: ## Run the application (starts DB if not running)
 	@docker-compose ps | grep -q trabalho_postgres || make db-up
