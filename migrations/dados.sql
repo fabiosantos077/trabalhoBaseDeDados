@@ -137,75 +137,62 @@ INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
     ('123.456.789-01', 1, 'Avaliacao');   -- Maria avalia resolução do próprio report
 
 -- ===============================================
--- BLOCO 7: Especializações de Interação
+-- BLOCO 7: Especializações de Interação (Com Ajuste de Unicidade)
 -- ===============================================
 
--- Inserção de Comentários (normal + edge case)
+-- ID 1 (Já inserido acima)
 INSERT INTO Comentario (idInteracao, texto) VALUES
     (1, 'Também passei por aqui e quase danifiquei meu carro! Urgente essa correção.');
 
--- Adicionar mais comentários (incluindo edge case)
+-- ID 4: Novo comentário em outro report
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
     ('456.789.123-03', 3, 'Comentario');
-
 INSERT INTO Comentario (idInteracao, texto) VALUES
     (4, 'Situação muito grave, pode causar problemas de saúde pública!');
 
--- Corner case: LENGTH(texto) = 3 (mínimo permitido pelo CHECK >= 3)
+-- ID 5: Comentário curto (teste de constraint LENGTH)
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
     ('111.222.333-44', 5, 'Comentario');
-
 INSERT INTO Comentario (idInteracao, texto) VALUES
-    (5, 'Sim');  -- Exatamente 3 caracteres
+    (5, 'Sim'); 
 
--- Corner case: DEFERRABLE UNIQUE - múltiplos comentários do mesmo cidadão no mesmo report
--- Testa o comportamento DEFERRABLE INITIALLY DEFERRED da constraint UNIQUE
+-- ID 6: Altera o CPF para Maria 
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
-    ('456.789.123-03', 1, 'Comentario');  -- Ana comenta novamente no report 1
-
+    ('123.456.789-01', 1, 'Comentario'); 
 INSERT INTO Comentario (idInteracao, texto) VALUES
     (6, 'Voltei aqui e vi que ainda não foi resolvido!');
 
--- Inserção de Upvotes (normal)
-INSERT INTO Upvote (idInteracao) VALUES
-    (2);
+-- ID 7: Upvote
+INSERT INTO Upvote (idInteracao) VALUES (2); -- Vincula ao ID 2 criado no Bloco 6
 
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
-    ('456.789.123-03', 2, 'Upvote');
+    ('456.789.123-03', 2, 'Upvote'); -- ID 7 (novo upvote)
+INSERT INTO Upvote (idInteracao) VALUES (7);
 
-INSERT INTO Upvote (idInteracao) VALUES
-    (7);
-
--- Inserção de Avaliações (normal + edge cases)
+-- ID 8: Avaliação
 INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
-    (3, 5, 'Problema resolvido rapidamente! Equipe muito eficiente.');
+    (3, 5, 'Problema resolvido rapidamente! Equipe muito eficiente.'); -- Vincula ao ID 3
 
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
-    ('456.789.123-03', 4, 'Avaliacao');
-
+    ('456.789.123-03', 4, 'Avaliacao'); -- ID 8
 INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
     (8, 4, 'Bom atendimento e resolução adequada.');
 
--- Corner case: nota = 1 (mínimo permitido pelo CHECK >= 1 AND <= 5)
+-- ID 9: Avaliação nota 1
 INSERT INTO Interacao (cpfCidadao, idReport, tipo) VALUES
-    ('111.222.333-44', 1, 'Avaliacao');
-
+    ('111.222.333-44', 1, 'Avaliacao'); -- ID 9
 INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
-    -- Corner case: nota = 1 E NULL comentario
-    (9, 1, NULL);  -- comentario é nullable
+    (9, 1, NULL);
 
 -- ===============================================
--- BLOCO 8: Histórico de Atualizações (dependem de Report e Funcionario)
+-- BLOCO 8: Histórico de Atualizações (Com Ajuste de Tempo)
 -- ===============================================
 
--- Inserção de registros de atualização
--- Note: dataHoraAtualizacao has DEFAULT NOW()
-INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, atributoAtualizado) VALUES
-    (1, '987.654.321-02', 'status'),      -- João muda status para "Em Análise"
-    (2, '321.654.987-04', 'status'),      -- Carlos muda status para "Em Análise"
-    (4, '555.666.777-88', 'status');      -- Funcionário sem email fecha report
-    (1, '987.654.321-02', 'status'),      -- João muda status para "Resolvido"
-
+INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, atributoAtualizado, dataHoraAtualizacao) VALUES
+    (2, '321.654.987-04', 'status', NOW()),
+    (4, '555.666.777-88', 'status', NOW()),
+    (1, '987.654.321-02', 'status', NOW()),
+    (1, '987.654.321-02', 'status', NOW() + interval '1 minute'); -- Segunda atualização 1 min depois
 
 -- ===============================================
 -- BLOCO 9: Resgate de Benefícios (dependem de Cidadao e Beneficio)
