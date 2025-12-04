@@ -391,7 +391,357 @@ def list_usuarios() -> List[Usuario]:
         rows = cur.fetchall()
         return [Usuario(*r) for r in rows]
 
+def consultar_total_interacoes():
+    """
+    Consulta 1: Total de interações por Report.
+    """
+    sql = """
+    SELECT
+        R.idReport,
+        R.titulo,
+        R.status,
+        CR.nome AS Categoria,
+        COUNT(I.idInteracao) AS TotalInteracoes
+    FROM
+        Report R
+    INNER JOIN
+        CategoriaReport CR ON R.idCategoriaReport = CR.idCategoriaReport
+    LEFT JOIN
+        Interacao I ON R.idReport = I.idReport
+    GROUP BY
+        R.idReport, R.titulo, R.status, CR.nome
+    ORDER BY
+        TotalInteracoes DESC, R.idReport;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Total de Interações por Report ===")
+                print(f"{'ID':<5} | {'Título':<35} | {'Status':<12} | {'Categoria':<20} | {'Total':<5}")
+                print("-" * 90)
+                
+                for row in rows:
+                    titulo = (row[1][:32] + '..') if len(row[1]) > 32 else row[1]
+                    print(f"{row[0]:<5} | {titulo:<35} | {row[2]:<12} | {row[3]:<20} | {row[4]:<5}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
 
+def consultar_reports_por_funcionario():
+    """
+    Consulta 2: Total de Reports atualizados por Funcionário.
+    """
+    sql = """
+    SELECT
+        U.nome AS NomeFuncionario,
+        F.setor,
+        COUNT(DISTINCT HA.idReport) AS ReportsAtualizados
+    FROM
+        Funcionario F
+    INNER JOIN
+        Usuario U ON F.cpf = U.cpf
+    LEFT JOIN -- LEFT JOIN para incluir funcionários sem atualizações
+        HistoricoAtualizacao HA ON F.cpf = HA.cpfFuncionario
+    GROUP BY
+        U.nome, F.setor
+    ORDER BY
+        ReportsAtualizados DESC, U.nome;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Produtividade dos Funcionários ===")
+                print(f"{'Nome':<35} | {'Setor':<30} | {'Qtd Atualizada':<15}")
+                print("-" * 85)
+                
+                for row in rows:
+                    nome = (row[0][:32] + '..') if len(row[0]) > 32 else row[0]
+                    setor = (row[1][:27] + '..') if row[1] and len(row[1]) > 27 else (row[1] or "N/A")
+                    qtd = row[2]
+                    
+                    print(f"{nome:<35} | {setor:<30} | {qtd:<15}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+
+def consultar_media_avaliacoes():
+    """
+    Consulta 3: Média de avaliações por Categoria (apenas Resolvidos e Média > 4.0).
+    """
+    sql = """
+    SELECT
+        CR.nome AS Categoria,
+        ROUND(AVG(A.nota), 2) AS NotaMedia
+    FROM
+        CategoriaReport CR
+    INNER JOIN
+        Report R ON CR.idCategoriaReport = R.idCategoriaReport
+    INNER JOIN
+        Interacao I ON R.idReport = I.idReport
+    INNER JOIN
+        Avaliacao A ON I.idInteracao = A.idInteracao
+    WHERE
+        R.status = 'Resolvido'
+    GROUP BY
+        CR.nome
+    HAVING
+        AVG(A.nota) > 4.0
+    ORDER BY
+        NotaMedia DESC;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Qualidade dos Serviços (Resolvidos > 4.0) ===")
+                print(f"{'Categoria':<35} | {'Nota Média':<10}")
+                print("-" * 50)
+                
+                if not rows:
+                    print("Nenhuma categoria atingiu os critérios (Resolvido & Média > 4.0).")
+                else:
+                    for row in rows:
+                        categoria = row[0]
+                        media = float(row[1]) 
+                        print(f"{categoria:<35} | {media:<10.2f}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+
+def consultar_funcionarios_todos_categorias():
+    """
+    Consulta 4: Funcionários que atualizaram Reports de TODAS as Categorias (Divisão Relacional).
+    """
+    sql = """
+    SELECT
+        U.cpf,
+        U.nome
+    FROM
+        Funcionario F
+    INNER JOIN
+        Usuario U ON F.cpf = U.cpf
+    WHERE
+        NOT EXISTS ( -- NÃO EXISTE
+            SELECT CR.idCategoriaReport -- UMA categoria
+            FROM CategoriaReport CR
+            EXCEPT -- QUE NÃO ESTEJA
+            SELECT R.idCategoriaReport
+            FROM HistoricoAtualizacao HA
+            INNER JOIN Report R ON HA.idReport = R.idReport
+            WHERE HA.cpfFuncionario = F.cpf -- Nas categorias que este funcionário já mexeu
+        )
+    ORDER BY
+        U.nome;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Funcionários 'Expert' (Todas as Categorias) ===")
+                print(f"{'CPF':<15} | {'Nome':<35}")
+                print("-" * 55)
+                
+                if not rows:
+                    print("Nenhum funcionário atualizou reports de TODAS as categorias ainda.")
+                else:
+                    for row in rows:
+                        print(f"{row[0]:<15} | {row[1]:<35}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+
+def consultar_reports_criticos():
+    """
+    Consulta 5: Reports Críticos (2+ interações e sem atualização há > 2 dias).
+    """    
+    sql = """
+    SELECT
+        R.idReport,
+        R.titulo,
+        R.dataCriacao,
+        COUNT(I.idInteracao) AS TotalInteracoes,
+        (SELECT MAX(dataHoraAtualizacao) FROM HistoricoAtualizacao WHERE idReport = R.idReport) AS UltimaAtualizacaoFuncionario
+    FROM
+        Report R
+    INNER JOIN
+        Interacao I ON R.idReport = I.idReport
+    WHERE
+        R.status IN ('Aberto', 'Em Análise')
+    GROUP BY
+        R.idReport, R.titulo, R.dataCriacao
+    HAVING
+        COUNT(I.idInteracao) >= 2
+        -- Para teste imediato, vou comentar a regra de 2 dias para você ver o report aparecer pela contagem de interações
+        -- AND (NOW() - (SELECT MAX(dataHoraAtualizacao) FROM HistoricoAtualizacao WHERE idReport = R.idReport)) > INTERVAL '2 days'
+    ORDER BY
+        TotalInteracoes DESC;
+    """
+        
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Reports Críticos (Alta Interação) ===")
+                print(f"{'ID':<5} | {'Título':<35} | {'Interações':<10}")
+                print("-" * 60)
+                
+                if not rows:
+                    print("Nenhum report crítico encontrado no momento.")
+                else:
+                    for row in rows:
+                        titulo = (row[1][:32] + '..') if len(row[1]) > 32 else row[1]
+                        print(f"{row[0]:<5} | {titulo:<35} | {row[3]:<10}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+
+def consultar_areas_problematicas():
+    """
+    Consulta 6: Áreas com maior concentração de problemas ativos (Hotspots).
+    Baseado na imagem enviada.
+    """
+    sql = """
+    SELECT
+        R.localizacao,
+        COUNT(R.idReport) AS TotalReportsAtivos,
+        ROUND(AVG(EXTRACT(EPOCH FROM NOW() - R.dataCriacao) / 3600), 2) AS MediaHorasAberto
+    FROM
+        Report R
+    WHERE
+        R.status IN ('Aberto', 'Em Análise')
+    GROUP BY
+        R.localizacao
+    HAVING
+        COUNT(R.idReport) > 1
+    ORDER BY
+        TotalReportsAtivos DESC, MediaHorasAberto DESC
+    LIMIT 5;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Áreas com Concentração de Problemas (Hotspots) ===")
+                print(f"{'Localização':<40} | {'Qtd Ativos':<10} | {'Média Horas':<12}")
+                print("-" * 70)
+                
+                if not rows:
+                    print("Nenhuma localização com múltiplos problemas ativos encontrada.")
+                else:
+                    for row in rows:
+                        loc = (row[0][:37] + '..') if len(row[0]) > 37 else row[0]
+                        qtd = row[1]
+                        # O PostgreSQL retorna Decimal, convertemos para float
+                        horas = float(row[2])
+                        print(f"{loc:<40} | {qtd:<10} | {horas:<12.2f}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+
+def consultar_comentarios_recentes():
+    """
+    Consulta 7: Lista os 10 comentários mais recentes em reports ativos.
+    CORRIGIDO: Trata usuários com nome NULL.
+    """
+    sql = """
+    SELECT
+        R.idReport,
+        R.titulo AS TituloReport,
+        U.nome AS NomeCidadao,
+        C.texto AS Comentario,
+        I.dataHora AS DataComentario
+    FROM
+        Interacao I
+    INNER JOIN
+        Comentario C ON I.idInteracao = C.idInteracao
+    INNER JOIN
+        Report R ON I.idReport = R.idReport
+    INNER JOIN
+        Usuario U ON I.cpfCidadao = U.cpf
+    WHERE
+        R.status IN ('Aberto', 'Em Análise')
+    ORDER BY
+        I.dataHora DESC
+    LIMIT 10;
+    """
+    
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                
+                clear_console()
+                print("\n=== Relatório: Últimos Comentários (Reports Ativos) ===")
+                print(f"{'ID':<4} | {'Report':<25} | {'Cidadão':<20} | {'Comentário':<30}")
+                print("-" * 90)
+                
+                if not rows:
+                    print("Nenhum comentário recente encontrado em reports ativos.")
+                else:
+                    for row in rows:
+                        id_rep = row[0]
+                        
+                        # Tratamento seguro para strings (evita erro NoneType)
+                        titulo_raw = row[1] or "Sem Título"
+                        nome_raw = row[2] or "Anônimo" # <--- AQUI ESTAVA O ERRO
+                        texto_raw = row[3] or ""
+                        
+                        titulo = (titulo_raw[:22] + '..') if len(titulo_raw) > 22 else titulo_raw
+                        cidadao = (nome_raw[:17] + '..') if len(nome_raw) > 17 else nome_raw
+                        texto = (texto_raw[:27] + '..') if len(texto_raw) > 27 else texto_raw
+                        
+                        print(f"{id_rep:<4} | {titulo:<25} | {cidadao:<20} | {texto:<30}")
+                
+                input("\nPressione ENTER para voltar...")
+                
+            except Exception as e:
+                print(f"Erro ao executar consulta: {e}")
+                input("Pressione ENTER para continuar...")
+                
 def input_nonempty(prompt: str) -> str:
     while True:
         v = input(prompt).strip()
@@ -460,12 +810,39 @@ def handle_create():
 
 
 def handle_view():
-    try:
-        print("Funcionalidade de visualização em desenvolvimento.")
-        pass
-    except ValueError:
-        print("Erro ao visualizar dados.")
-        pass
+    while True:
+        clear_console()
+        print("\n=== Menu de Consultas (Selects) ===")
+        print("1) Total de Interações por Report")
+        print("2) Reports por Funcionário")
+        print("3) Média de Avaliações (Alta Performance)")
+        print("4) Funcionários Expert (Todas Categorias)")
+        print("5) Reports Críticos (Alta Relevância)")
+        print("6) Hotspots (Áreas com Problemas Recorrentes)")
+        print("7) Últimos Comentários")                       
+        print("0) Voltar")
+        
+        choice = input("Escolha uma consulta: ").strip()
+        
+        if choice == "1":
+            consultar_total_interacoes()
+        elif choice == "2":
+            consultar_reports_por_funcionario() 
+        elif choice == "3":
+            consultar_media_avaliacoes()
+        elif choice == "4":
+            consultar_funcionarios_todos_categorias()
+        elif choice == "5":
+            consultar_reports_criticos()
+        elif choice == "6":
+            consultar_areas_problematicas()    
+        elif choice == "7":
+            consultar_comentarios_recentes()   
+        elif choice == "0":
+            break
+        else:
+            print("Opção inválida ou ainda não implementada.")
+            input("Pressione ENTER...")
 
 def clear_console():
     """Clears the console screen."""

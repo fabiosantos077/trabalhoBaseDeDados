@@ -108,3 +108,45 @@ HAVING
     AND (NOW() - (SELECT MAX(dataHoraAtualizacao) FROM HistoricoAtualizacao WHERE idReport = R.idReport)) > INTERVAL '2 days' -- Sem atualização há mais de 2 dias
 ORDER BY
     TotalInteracoes DESC, UltimaAtualizacaoFuncionario ASC;
+
+-- 6
+-- Descrição: Identifica áreas com maior concentração de problemas ativos (Hotspots).
+--            Agrupa por localização e mostra apenas locais com mais de 1 report ativo.
+SELECT
+    R.localizacao,
+    COUNT(R.idReport) AS TotalReportsAtivos,
+    ROUND(AVG(EXTRACT(EPOCH FROM NOW() - R.dataCriacao) / 3600), 2) AS MediaHorasAberto
+FROM
+    Report R
+WHERE
+    R.status IN ('Aberto', 'Em Análise')
+GROUP BY
+    R.localizacao
+HAVING
+    COUNT(R.idReport) > 1
+ORDER BY
+    TotalReportsAtivos DESC, MediaHorasAberto DESC
+LIMIT 5;
+
+-- 7
+-- Descrição: Lista os 10 comentários mais recentes feitos em Reports que ainda estão ativos.
+--            Inclui tratamento para usuários com nome nulo (COALESCE).
+SELECT
+    R.idReport,
+    R.titulo AS TituloReport,
+    COALESCE(U.nome, 'Anônimo') AS NomeCidadao, 
+    C.texto AS Comentario,
+    I.dataHora AS DataComentario
+FROM
+    Interacao I
+INNER JOIN
+    Comentario C ON I.idInteracao = C.idInteracao
+INNER JOIN
+    Report R ON I.idReport = R.idReport
+INNER JOIN
+    Usuario U ON I.cpfCidadao = U.cpf
+WHERE
+    R.status IN ('Aberto', 'Em Análise')
+ORDER BY
+    I.dataHora DESC
+LIMIT 10;

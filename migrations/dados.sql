@@ -111,6 +111,14 @@ INSERT INTO Report (titulo, localizacao, descricao, status, idCategoriaReport, c
         'Aberto',
         4,  -- Categoria: Pichação Leve
         '111.222.333-44'  -- Cidadão sem nome
+    ),
+    (
+        'Outro problema na mesma rua',
+        'Rua das Flores, 523 - Campinas/SP',
+        'Calçada quebrada perto do lixo',
+        'Aberto', 
+        1, 
+        '456.789.123-03'
     );
 
 -- ===============================================
@@ -189,10 +197,19 @@ INSERT INTO Avaliacao (idInteracao, nota, comentario) VALUES
 -- ===============================================
 
 INSERT INTO HistoricoAtualizacao (idReport, cpfFuncionario, atributoAtualizado, dataHoraAtualizacao) VALUES
-    (2, '321.654.987-04', 'status', NOW()),
-    (4, '555.666.777-88', 'status', NOW()),
+    -- Report 1 (Categoria 1: Buraco)
     (1, '987.654.321-02', 'status', NOW()),
-    (1, '987.654.321-02', 'status', NOW() + interval '1 minute'); -- Segunda atualização 1 min depois
+    -- Report 2 (Categoria 2: Iluminação) - João atualiza também
+    (2, '987.654.321-02', 'status', NOW() + interval '5 minutes'),
+    
+    -- Report 3 (Categoria 3: Lixo) - João atualiza também
+    (3, '987.654.321-02', 'status', NOW() + interval '10 minutes'),
+    
+    -- Report 5 (Categoria 4: Pichação) - João atualiza também
+    (5, '987.654.321-02', 'status', NOW() + interval '15 minutes'),
+
+    (2, '321.654.987-04', 'status', NOW()),
+    (4, '555.666.777-88', 'status', NOW());
 
 -- ===============================================
 -- BLOCO 9: Resgate de Benefícios (dependem de Cidadao e Beneficio)
